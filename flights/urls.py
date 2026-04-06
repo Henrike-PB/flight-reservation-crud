@@ -10,8 +10,8 @@ O DefaultRouter é uma classe que automaticamente gera as URLs para as operaçõ
 router = DefaultRouter()
 router.register(r'flights', FlightViewSet)
 router.register(r'airplanes', AirplaneViewSet)
-router.register(r'clients', ClientViewSet)
-router.register(r'reservations', ReservationViewSet)
+router.register(r'clients', ClientViewSet, basename='client')
+router.register(r'reservations', ReservationViewSet, basename='reservation')
 
 urlpatterns = [
     path('', include(router.urls)),

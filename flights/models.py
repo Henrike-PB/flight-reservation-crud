@@ -1,72 +1,88 @@
 from django.db import models
-
-
-'''
-Modelos para o aplicativo de voos. Inclui as classes Airplane e Flight, que representam os aviões e os voos, respectivamente.
-'''
+from django.core.validators import MinValueValidator
+from django.contrib.auth.models import User
 
 '''
-Nesta classe, estamos definindo o modelo Airplane, que tem os campos model (modelo do avião) e capacity (capacidade de passageiros).
-O campo model é único para garantir que não haja dois aviões com o mesmo modelo.
+Aqui em models.py, estamos definindo os modelos de dados para o sistema de reserva de voos.
+Temos quatro modelos principais: Airplane, Flight, Client e Reservation.
 '''
+
+
 class Airplane(models.Model):
+    '''
+    Representa um avião cadastrado no sistema.
+    - model: identificação única do avião (ex: "Boeing 737-800").
+    - capacity: número máximo de passageiros (deve ser >= 1).
+    '''
+
     model = models.CharField(max_length=100, unique=True)
-    capacity = models.IntegerField()
+    capacity = models.PositiveIntegerField(
+        validators=[MinValueValidator(1, message="A capacidade deve ser de pelo menos 1 passageiro.")]
+    )
 
     def __str__(self):
-        return self.model
+        return f"{self.model} ({self.capacity} lugares)"
 
-'''
-Nesta classe, estamos definindo o modelo Flight, que tem os campos:
 
-flight_number (número do voo), origin (origem), destination (destino),
-departure_time (hora de saída), arrival_time (hora de chegada)  e airplane (avião). 
-
-O campo flight_number é único para garantir que não haja dois voos com o mesmo número.
-'''
 class Flight(models.Model):
+    '''
+    Representa um voo registrado no sistema.
+    - flight_number: código único do voo (ex: "AD1234").
+    - origin / destination: cidades de origem e destino.
+    - departure_time / arrival_time: data e horário de partida e chegada.
+    - airplane: avião associado a este voo (FK -> Airplane).
+    '''
+
     flight_number = models.CharField(max_length=10, unique=True)
     origin = models.CharField(max_length=100)
     destination = models.CharField(max_length=100)
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
-    airplane = models.ForeignKey(Airplane, on_delete=models.CASCADE)
+    airplane = models.ForeignKey(Airplane, on_delete=models.CASCADE, related_name='flights')
 
     def __str__(self):
-        return f"{self.flight_number}: {self.origin} -> {self.destination}"
+        return f"{self.flight_number}: {self.origin} → {self.destination}"
 
-'''
-Aqui teremos a classe Client, que representa os clientes que fazem reservas de voos.
-Ela tem os campos name (nome), telephone (telefone) e email (e-mail).
-O campo email é único para garantir que não haja dois clientes com o mesmo e-mail.
-'''  
+
 class Client(models.Model):
+    '''
+    Representa um cliente que pode fazer reservas.
+    - user: vínculo 1:1 com o sistema de autenticação do Django.
+    - name: nome completo do cliente.
+    - telephone: telefone de contato.
+    - email: e-mail único para identificação.
+    '''
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='client')
     name = models.CharField(max_length=100)
     telephone = models.CharField(max_length=20)
     email = models.EmailField(unique=True)
 
     def __str__(self):
         return self.name
-    
-'''
-Por fim, temos a classe Reservation, que representa as reservas feitas pelos clientes.
-Ela tem os campos client (cliente que fez a reserva), flight (voo reservado) e reservation_date (data da reserva).
-'''
+
+
 class Reservation(models.Model):
-    client = models.ForeignKey(Client, on_delete=models.CASCADE)
-    flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
+    '''
+    Representa uma reserva de assento em um voo.
+    - client: cliente que fez a reserva (FK -> Client).
+    - flight: voo reservado (FK -> Flight).
+    - seat: número/código do assento (ex: "12A").
+    - reservation_date: data/hora em que a reserva foi criada (automática).
+
+    Restrições:
+    - Não pode haver duas reservas com o mesmo assento no mesmo voo (UniqueConstraint).
+    '''
+
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='reservations')
+    flight = models.ForeignKey(Flight, on_delete=models.CASCADE, related_name='reservations')
     seat = models.CharField(max_length=5)
     reservation_date = models.DateTimeField(auto_now_add=True)
 
-    '''
-    A classe Meta é usada para definir restrições e opções adicionais para o modelo. 
-    Neste caso, estamos definindo uma restrição de unicidade para garantir que não haja duas reservas com o mesmo voo e assento.
-    Isso é importante para evitar que dois clientes reservem o mesmo assento no mesmo voo.
-    '''
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['flight', 'seat'], name='unique_seat_per_flight')
         ]
 
     def __str__(self):
-        return f"Reservation for {self.client.name} on flight {self.flight.flight_number}"
+        return f"Reserva: {self.client.name} - Voo {self.flight.flight_number} (Assento {self.seat})"

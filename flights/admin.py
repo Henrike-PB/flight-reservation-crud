@@ -11,7 +11,7 @@ Na classe AirplaneAdmin, estamos configurando a exibição dos campos model e ca
 '''
 @admin.register(Airplane) # usamos esse decorador para registrar o modelo Airplane no admin do Django
 class AirplaneAdmin(admin.ModelAdmin):
-    list_display = ('model', 'capacity')
+    list_display = ('id', 'model', 'capacity')
     search_fields = ('model',)
 
 
@@ -20,15 +20,16 @@ Nessa classe FlightAdmin, estamos configurando a exibição dos campos flight_nu
 '''
 @admin.register(Flight)
 class FlightAdmin(admin.ModelAdmin):
-    list_display = ('flight_number', 'origin', 'destination', 'departure_time', 'arrival_time', 'airplane')
+    list_display = ('flight_number', 'origin', 'destination', 'departure_time', 'airplane')
     search_fields = ('flight_number', 'origin', 'destination')
+    list_filter = ('origin', 'destination')
 
 '''
 Na classe ClientAdmin, estamos configurando a exibição dos campos name, telephone e email na lista de clientes e permitindo a busca pelos campos name e email.
 '''
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'telephone', 'email')
+    list_display = ('name', 'email', 'telephone', 'user')
     search_fields = ('name', 'email')
 
 '''
@@ -36,7 +37,7 @@ E na classe ReservationAdmin, estamos configurando a exibição dos campos clien
 '''
 @admin.register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
-    list_display = ('client', 'flight', 'seat', 'reservation_date')
-    search_fields = ('client', 'flight')
+    list_display = ('id', 'client', 'flight', 'seat', 'reservation_date')
+    search_fields = ('client__name', 'flight__flight_number', 'seat')
 
 
